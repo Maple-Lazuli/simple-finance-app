@@ -101,7 +101,7 @@ def dashboard():
     fig.add_trace(go.Scatter(x=df['datetime'], y=df['amount'], mode='lines+markers', name='Values'))
 
     # Update layout
-    fig.update_layout(title='Sample Line Plot', xaxis_title='Date', yaxis_title='Value')
+    fig.update_layout(title='', xaxis_title='Date', yaxis_title='Amount', margin=dict(l=10, r=10, t=10, b=10))
 
     # Convert the plot to HTML
     plot_html = pio.to_html(fig, full_html=False)
