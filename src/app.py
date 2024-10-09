@@ -54,20 +54,30 @@ def fix():
 
 def generate_table(df):
     """ Generate an HTML table from a DataFrame. """
-    table_html = '<div class="container text-center">'
+    # consider adding CSS for the table
+    # arrange the df columns to a way that make more sense
+    # transform the date time field
+
+    avoid_columns = ['valid', 'date_override']
+
+    table_html = '<br /><div class="container" id="datatable">'
     # Create table header
     table_html += '<div class="row">'
     for column in df.columns:
-        table_html += f'<div class="col">{column}<div>'
-    table_html += '<div>'
+        if column in avoid_columns:
+            continue
+        table_html += f'<div class="col"><b>{column.upper()}</b></div>'
+    table_html += '</div>'
+
+    for idx in range(df.shape[0]):
+        table_html += '<div class="row">'
+        for column in df.columns:
+            if column in avoid_columns:
+                continue
+            table_html += f'<div class="col"><small>{df[column].iloc[idx]}</small></div>'
+        table_html += '</div>'
 
     # Create table body
-    table_html += '<tbody>'
-    for index, row in df.iterrows():
-        table_html += '<tr>'
-        for value in row:
-            table_html += f'<td>{value}</td>'
-        table_html += '</tr>'
     table_html += '</div>'
 
     return table_html
@@ -76,8 +86,9 @@ def generate_table(df):
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
     # Create a Plotly line plot
+    df = get_dataframe()
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df['Date'], y=df['Value'], mode='lines+markers', name='Values'))
+    fig.add_trace(go.Scatter(x=df['datetime'], y=df['amount'], mode='lines+markers', name='Values'))
 
     # Update layout
     fig.update_layout(title='Sample Line Plot', xaxis_title='Date', yaxis_title='Value')
@@ -86,7 +97,7 @@ def dashboard():
     plot_html = pio.to_html(fig, full_html=False)
 
     # Generate the data table procedurally
-    table_html = generate_table(get_dataframe())
+    table_html = generate_table(df)
 
     # Render the HTML template with the plot and data table
     return render_template('dashboard.html', plot=plot_html, table=table_html)
