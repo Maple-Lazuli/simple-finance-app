@@ -182,10 +182,18 @@
 
 <main class="container">
   <div class="bg-body-tertiary p-5 rounded">
-    <h1>DashBoard</h1>
+    <h1>90-Day DashBoard</h1>
+    <div>
+      {{ poc_table|safe }}
+    </div>
+    <hr />
     <div>
         {{ plot|safe }}
     </div>
+      <div>
+        {{ bar_plot|safe }}
+    </div>
+    <hr />
     <div>
         {{ table|safe }}
     </div>

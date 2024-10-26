@@ -93,24 +93,79 @@ def generate_table(df):
     return table_html
 
 
-@app.route('/dashboard', methods=['GET'])
-def dashboard():
-    # Create a Plotly line plot
-    df = get_dataframe()
+def get_cumulative_plot(df):
     fig = go.Figure()
+    df['amount'] = df['amount'].cumsum()
     fig.add_trace(go.Scatter(x=df['datetime'], y=df['amount'], mode='lines+markers', name='Values'))
-
-    # Update layout
-    fig.update_layout(title='', xaxis_title='Date', yaxis_title='Amount', margin=dict(l=10, r=10, t=10, b=10))
-
-    # Convert the plot to HTML
+    fig.update_layout(title='Cumulative Summation Over The Last 90 Days', xaxis_title='Date', yaxis_title='Amount',
+                      margin=dict(l=10, r=10, t=40, b=10))
     plot_html = pio.to_html(fig, full_html=False)
 
-    # Generate the data table procedurally
-    table_html = generate_table(df)
+    return plot_html
 
-    # Render the HTML template with the plot and data table
-    return render_template('dashboard.html', plot=plot_html, table=table_html)
+
+def generate_poc_spending_table(df):
+    df['whomst'] = df['whomst'].apply(lambda x: x.upper())
+    whomst_set = set(df['whomst'].values)
+    spending = []
+    for whom in whomst_set:
+        temp = dict()
+        temp['poc'] = whom
+        temp['spent'] = df[df['whomst'] == whom]['amount'].sum()
+        spending.append(temp)
+
+    table_html = '<br /><div class="container" id="poctable">'
+    table_html += '<div class="row">'
+    for column in ['Whomst', 'Spent']:
+        table_html += f'<div class="col"><b>{column.upper()}</b></div>'
+    table_html += '</div>'
+
+    for entry in spending:
+        table_html += '<div class="row">'
+        table_html += f'<div class="col"><small>{entry["poc"]}</small></div>'
+        table_html += f'<div class="col"><small>{entry["spent"]}</small></div>'
+
+        table_html += '</div>'
+    table_html += '</div>'
+
+    return table_html
+
+
+def generate_spending_bar_chart(df):
+    df_sum = df.groupby('tag')['amount'].sum().reset_index()
+
+    # Create the Plotly bar chart
+    fig = go.Figure()
+
+    # Add a trace for each unique category
+    for category in df_sum['tag'].unique():
+        category_data = df_sum[df_sum['tag'] == category]
+        fig.add_trace(go.Bar(
+            x=category_data['tag'],
+            y=category_data['amount'],
+            name=category
+        ))
+
+    # Update layout for titles and other options
+    fig.update_layout(
+        title='Spending By Tag Over 90 Days',
+        xaxis_title='Tag',
+        yaxis_title='Amount',
+        barmode='group'  # This groups the bars by category on the same axis
+    )
+
+    plot_html = pio.to_html(fig, full_html=False)
+
+    return plot_html
+
+
+@app.route('/dashboard', methods=['GET'])
+def dashboard():
+    poc_table = generate_poc_spending_table(get_dataframe())
+    table_html = generate_table(get_dataframe())
+    plot_html = get_cumulative_plot(get_dataframe())
+    bar_plot = generate_spending_bar_chart(get_dataframe())
+    return render_template('dashboard.html', plot=plot_html, table=table_html, poc_table=poc_table, bar_plot=bar_plot)
 
 
 # Route for POST request to handle the form submission
