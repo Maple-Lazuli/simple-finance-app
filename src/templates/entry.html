@@ -190,6 +190,7 @@
 <div class="input-group mb-3">
   <span class="input-group-text" id="Tag">Tag</span>
   <input type="text" class="form-control" placeholder="Gas, Door Dash, etc" name="Tag" aria-label="Tag" aria-describedby="Tag">
+  {{ tags | safe }}
 </div>
 
   <div class="input-group mb-3">
@@ -212,6 +213,7 @@
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
   </div>
+
 </main>
 <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     </body>

@@ -58,7 +58,8 @@ def dump():
 
 @app.route('/', methods=['GET'])
 def entry():
-    return render_template('entry.html')
+    tags = get_tags(get_dataframe())
+    return render_template('entry.html', tags=tags)
 
 
 @app.route('/fix', methods=['GET'])
@@ -67,7 +68,9 @@ def fix():
 
 
 def get_tags(df):
-    return df['tags'].unique()
+
+    tags = f'<p class="text-muted"> <b>Used tags</b>: ({", ".join(sorted(df["tag"].unique()))}) </p>'
+    return tags
 
 
 def generate_table(df):
@@ -107,7 +110,7 @@ def get_cumulative_plot(df):
     df['whomst'] = df['whomst'].apply(lambda x: x.upper().strip().capitalize())
     whomst_set = set(df['whomst'].values)
     for whom in whomst_set:
-        df_part= df.copy()
+        df_part = df.copy()
         df_part = df_part[df_part['whomst'] == whom]
         df_part['amount'] = df_part['amount'].cumsum()
         fig.add_trace(go.Scatter(x=df_part['datetime'], y=df_part['amount'],
@@ -200,7 +203,8 @@ def generate_facet_bar_chart(df):
 
         # Add bar trace to the correct subplot
         fig.add_trace(
-            go.Bar(x=sub_df['tag'], y=sub_df['amount'], name=subcategory, marker_color=[category_colors[cat] for cat in sub_df['tag']]),
+            go.Bar(x=sub_df['tag'], y=sub_df['amount'], name=subcategory,
+                   marker_color=[category_colors[cat] for cat in sub_df['tag']]),
             row=1, col=i
         )
 
