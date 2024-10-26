@@ -133,6 +133,7 @@ def generate_poc_spending_table(df):
 
 def generate_spending_bar_chart(df):
     df_sum = df.groupby('tag')['amount'].sum().reset_index()
+    df_sum = df.sort_values(by='amount', ascending=False)
 
     # Create the Plotly bar chart
     fig = go.Figure()
