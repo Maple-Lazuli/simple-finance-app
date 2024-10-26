@@ -231,11 +231,11 @@ def dashboard():
 # Route for POST request to handle the form submission
 @app.route('/submit', methods=['POST'])
 def submit():
-    whomst = request.form.get('Whomst')
-    tag = request.form.get('Tag')
-    amount = request.form.get('Amount')
-    notes = request.form.get('Notes')
-    date_override = request.form.get('Date')
+    whomst = request.form.get('Whomst').strip()
+    tag = request.form.get('Tag').strip()
+    amount = request.form.get('Amount').strip()
+    notes = request.form.get('Notes').strip()
+    date_override = request.form.get('Date').strip()
     ts_code = str(time.time())
 
     try:
