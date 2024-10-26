@@ -5,6 +5,8 @@ import json
 from datetime import datetime, timedelta
 import plotly.graph_objs as go
 import plotly.io as pio
+from plotly.subplots import make_subplots
+import plotly
 import time
 import os
 
@@ -64,6 +66,10 @@ def fix():
     return render_template('fix.html')
 
 
+def get_tags(df):
+    return df['tags'].unique()
+
+
 def generate_table(df):
     """ Generate an HTML table from a DataFrame. """
     # consider adding CSS for the table
@@ -95,8 +101,18 @@ def generate_table(df):
 
 def get_cumulative_plot(df):
     fig = go.Figure()
-    df['amount'] = df['amount'].cumsum()
-    fig.add_trace(go.Scatter(x=df['datetime'], y=df['amount'], mode='lines+markers', name='Values'))
+    df_main = df.copy()
+    df_main['amount'] = df_main['amount'].cumsum()
+    fig.add_trace(go.Scatter(x=df_main['datetime'], y=df_main['amount'], mode='lines+markers', name='Total'))
+    df['whomst'] = df['whomst'].apply(lambda x: x.upper().strip().capitalize())
+    whomst_set = set(df['whomst'].values)
+    for whom in whomst_set:
+        df_part= df.copy()
+        df_part = df_part[df_part['whomst'] == whom]
+        df_part['amount'] = df_part['amount'].cumsum()
+        fig.add_trace(go.Scatter(x=df_part['datetime'], y=df_part['amount'],
+                                 mode='lines+markers', name=whom))
+
     fig.update_layout(title='Cumulative Summation Over The Last 90 Days', xaxis_title='Date', yaxis_title='Amount',
                       margin=dict(l=10, r=10, t=40, b=10))
     plot_html = pio.to_html(fig, full_html=False)
@@ -105,7 +121,7 @@ def get_cumulative_plot(df):
 
 
 def generate_poc_spending_table(df):
-    df['whomst'] = df['whomst'].apply(lambda x: x.upper())
+    df['whomst'] = df['whomst'].apply(lambda x: x.upper().strip().capitalize())
     whomst_set = set(df['whomst'].values)
     spending = []
     for whom in whomst_set:
@@ -149,12 +165,49 @@ def generate_spending_bar_chart(df):
 
     # Update layout for titles and other options
     fig.update_layout(
-        title='Spending By Tag Over 90 Days',
+        title='Total Spending By Tag Over 90 Days',
         xaxis_title='Tag',
         yaxis_title='Amount',
         barmode='group'  # This groups the bars by category on the same axis
     )
 
+    plot_html = pio.to_html(fig, full_html=False)
+
+    return plot_html
+
+
+def generate_facet_bar_chart(df):
+    df['whomst'] = df['whomst'].apply(lambda x: x.upper().strip().capitalize())
+    df_sum = df.groupby(['tag', 'whomst'])['amount'].sum().reset_index()
+    df_sum = df_sum.sort_values(by='amount', ascending=False)
+
+    subcategories = df_sum['whomst'].unique()
+    n_subplots = len(subcategories)
+    # Create the Plotly bar chart
+    fig = make_subplots(
+        rows=1,
+        cols=n_subplots,
+        subplot_titles=[f"{sub}" for sub in subcategories]
+    )
+
+    colors = plotly.colors.qualitative.Plotly  # Using Plotly's built-in qualitative colors
+    category_colors = {cat: colors[i % len(colors)] for i, cat in enumerate(df_sum['tag'].unique())}
+
+    # Add a trace for each unique category
+    for i, subcategory in enumerate(subcategories, start=1):
+        # Filter data for the current subcategory
+        sub_df = df_sum[df_sum['whomst'] == subcategory]
+
+        # Add bar trace to the correct subplot
+        fig.add_trace(
+            go.Bar(x=sub_df['tag'], y=sub_df['amount'], name=subcategory, marker_color=[category_colors[cat] for cat in sub_df['tag']]),
+            row=1, col=i
+        )
+
+    fig.update_layout(
+        title="Bar of Spending by POC",
+        showlegend=False
+    )
     plot_html = pio.to_html(fig, full_html=False)
 
     return plot_html
@@ -166,7 +219,9 @@ def dashboard():
     table_html = generate_table(get_dataframe())
     plot_html = get_cumulative_plot(get_dataframe())
     bar_plot = generate_spending_bar_chart(get_dataframe())
-    return render_template('dashboard.html', plot=plot_html, table=table_html, poc_table=poc_table, bar_plot=bar_plot)
+    facet_bar_plot = generate_facet_bar_chart(get_dataframe())
+    return render_template('dashboard.html', plot=plot_html, table=table_html, poc_table=poc_table, bar_plot=bar_plot,
+                           facet_bar_plot=facet_bar_plot)
 
 
 # Route for POST request to handle the form submission
